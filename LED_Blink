@@ -1,0 +1,19 @@
+/*
+Author:Kanishk
+*/
+
+#define F_CPU 1600000UL  /* Define CPU Frequency e.g. here its 16MHz */
+#include <avr/io.h>
+#include<util/delay.h>
+
+int main(void)
+{
+	DDRA=0x01;  // Output Pin
+	while (1)
+	{
+		PORTA=~PORTA;     // Put value for PortA0
+		_delay_ms(500);
+		
+
+	}
+}
