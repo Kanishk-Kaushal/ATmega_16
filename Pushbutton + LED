@@ -1,30 +1,33 @@
-// Author: Kanishk
-#define F_CPU 16000000
+// Author: KANISHK
+
+
+#define F_CPU 1600000
 #include <avr/io.h>
 #include <util/delay.h>
 
+
 int main(void)
 {
-	DDRB |= (1<<DDB0); //PB0 SET AS OUTPUT
+    DDRB |= (1<<DDB0);	
 	
-	DDRC &= (~(1<<DDC0)); // PC0 CLEARED IE INPUT
-	
-	
+	DDRC &= (~(1<<DDC0));
 	
 	
-	while (1)
-	{
-		if(PINC & (1<<PINC0)) // IF PC0 IS 1
-		{
-			PORTB |= (1<<PINB0); // PB0 IS 1 IE LED IS ON
-		}
-		else
-		{
-			PORTB &= (~(1<<PINB0)); // ELSE PB0 IS 0 IE LED IS OFF
-		}
+			
 		
+    while (1) 
+    {
+		  if(PINC & (1<<PINC0))
+		  {
+			PORTB |= (1<<PB0);  
+		  }
+		  else
+		  {
+			PORTB &= (~(1<<PB0));  
+		  }
+			
 
-		
+	
 		
 	}
 }
