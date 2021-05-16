@@ -1,33 +1,22 @@
-// Author: KANISHK
-
-
-#define F_CPU 1600000
+//AUTHOR: KANISHK 
+#Define F_cpu 16000000
 #include <avr/io.h>
 #include <util/delay.h>
-
-
 int main(void)
 {
-    DDRB |= (1<<DDB0);	
-	
-	DDRC &= (~(1<<DDC0));
-	
-	
-			
-		
-    while (1) 
-    {
-		  if(PINC & (1<<PINC0))
-		  {
-			PORTB |= (1<<PB0);  
-		  }
-		  else
-		  {
-			PORTB &= (~(1<<PB0));  
-		  }
-			
-
-	
-		
+	DDRA=0x00;// for input port-LED
+	DDRD=0xFF;// for output port-Switch
+	while(1)
+	{
+		if(PINA==0x01)// checking the status of PIN, if it is '1', turns on the LED
+		{
+			_delay_ms(100); // for debouncing of switch
+			PORTD=0x01;   // Turning on the LED
+		}
+		else if(PINA==0x00)// checking the status of PIN, if it is '0', turns off the LED
+		{
+			_delay_ms(100); // For debouncing of switch
+			PORTD=0x00;// Turning off the LED
+		}
 	}
 }
