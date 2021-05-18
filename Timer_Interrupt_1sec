@@ -1,0 +1,39 @@
+// F_CPU = 1MHz
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+int main(void)
+{
+	// ENABLE THE GLOBAL INTERRUPT ENABLE BIT
+	sei();
+	
+	// ENABLE THE REQUIRED TIMER INTERRUPT
+	TIMSK |= (1<<TOIE1);
+	
+	// SET MODE OF THE TIMER
+	TCCR1A &= (~(1<<WGM10)) & (~(1<<WGM11));
+	TCCR1B &= (~(1<<WGM12)) & (~(1<<WGM13));  // NORMAL MODE
+	
+	// SET THE PRESCALER FOR THE TIMER
+	TCCR1B |= (1<<CS12) | (1<<CS10);  // 1024
+	TCCR1B &= (~(1<<CS11));
+	
+	// LOAD THE PERIOD FOR THE TIMER
+	TCNT1 = 64558.4375;
+	
+	DDRB |= (1<<DDB0); // PB0 AS O/P
+	while (1)
+	{
+		
+
+		
+	}
+}
+
+// IMPLEMENT THE INTERRUPT HANDLER FUNCTION
+ISR(TIMER1_OVF_vect)
+{
+	PORTB ^= (1<<PINB0);
+	TCNT1 = 64558.4375;
+}
