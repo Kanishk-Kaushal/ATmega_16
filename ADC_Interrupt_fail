@@ -1,0 +1,48 @@
+#define F_CPU 1000000
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <util/delay.h>
+
+int main(void)
+{
+	
+	sei();
+	
+	// SET MODE OF THE TIMER
+	TCCR1A |= (1<<WGM10) | (1<<WGM11);
+	TCCR1B |= (1<<WGM12);
+	TCCR1B &= ~(1<<WGM13);                   // FAST PWM 10 - BIT
+	
+	TCCR1A |= (1<<COM1A1);
+	TCCR1A &= ~(1<<COM1A0);      // PWM IN NON INVERTING MODE
+	
+	
+	// SET THE PRESCALER FOR THE TIMER FOR SETTING PWM FREQUENCY
+	TCCR1B |= (1<<CS10) | (1<<CS11);
+	TCCR1B &= ~(1<<CS12);             // PRESCALER = 64
+	// FREQ OF PWM = 16MHz / 64 = 250KHz
+	
+	// CONFIGURE THE OUTPUT COMPARE PIN AS O/P
+	DDRD |= (1<<DDD5);
+	
+	// Set Reference to NO AVCC and input to ADC0
+	//set data alignment in data register
+	ADMUX = 0x00;
+	
+	// Enable ADC, set prescaler
+	ADCSRA |= (1<<ADPS2) | (1<<ADIE) | (1<<ADEN) | (1<<ADATE);
+	ADCSRA &= (~(1<<ADPS1)) & (~(1<<ADPS0));  // 16
+	// start the conversion
+	ADCSRA |= (1<<ADSC);
+	
+	while (1)
+	{
+
+	}
+}
+//implement ISR Interrupt handler
+ISR(ADC_vect)
+{
+	OCR1A = ADC;
+}
+
