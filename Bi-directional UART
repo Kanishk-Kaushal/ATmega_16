@@ -1,0 +1,56 @@
+/*
+ * USART_2_Way.c
+ *
+ * Created: 18-06-2021 22:32:08
+ * Author : KANISHK KAUSHAL
+ */ 
+
+#include <avr/io.h>
+
+int main(void)
+{
+	unsigned char receiveData;
+	
+	DDRD |=(1 <<PIND1); //TX
+	DDRD &= ~(1 << PIND0); //RX
+	
+	DDRA &= ~(1<<PINA0); //PUSHBUTTON
+	DDRB |= (1<<PINB0); //LED
+	
+	// USART CONFIGURATION
+	
+	UCSRA |=(1<<U2X); //DOUBLE ASYNCHRONOUS MODE
+	UBRRL=12; //9600 BAUD RATE
+	UCSRB |=(1<<TXEN) | (1<<RXEN); //ENABLES TRANSMIT AND RECIEVE PINS
+	UCSRC |=(1<<URSEL) | (1<<UCSZ1) | (1<<UCSZ0); //8 BIT DATA MODE
+	
+	while (1)
+	{
+		//TRANSMITTER
+		
+		if(PINA & (1<<PINA0))
+		{
+			while(!(UCSRA & (1<<UDRE)));
+			UDR=0b11110000;
+		}
+		else
+		{
+			while(!(UCSRA & (1<<UDRE)));
+			UDR=0b00000000;
+		}
+		
+		//RECIEVER
+		
+		while (! (UCSRA & (1 << RXC)) );
+		receiveData = UDR;
+		if (receiveData == 0b11110000)
+		{
+			PORTB |=(1<<PORTB0);
+		}
+		else
+		{
+			PORTB &=~(1<<PORTB0);
+		}
+	}
+}
+
