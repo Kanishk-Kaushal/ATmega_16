@@ -1,0 +1,307 @@
+//TRANSMITTER
+
+#define F_CPU 1000000UL
+
+#include <avr/io.h>
+
+
+void UART_Init(void)
+{
+	//BAUD RATE	2400
+	unsigned int ubrr = 25;
+	UBRRH = (unsigned char)(ubrr>>8);
+	UBRRL = (unsigned char)ubrr;
+	
+	//ENABLE TRANSMISSION	
+	UCSRB |=(1<<TXEN);
+	
+	//NORMAL RATE	
+	UCSRC &= ~(1<<U2X);
+	
+	//2 STOP BITS & 8 BIT DATA LENGTH	
+	UCSRC  |= (1<<URSEL)|(1<<USBS)|(3<<UCSZ0);
+}
+
+void UART_Transmit(unsigned char data)
+{
+	//WAIT UNTIL BUFFER IS EMPTY	
+	while(!(UCSRA & (1<<UDRE)));
+	UDR = data;
+}
+
+int main(void)
+{
+	UART_Init();
+	
+	//ADC INITIALISE
+	DDRA = 0b00000000;
+	ADMUX = (1<<REFS0);
+	
+	//PRESCLAR = 8
+	ADCSRA = (1<<ADEN)|(1<<ADPS1) |(1<<ADPS0);
+	
+	ADMUX &=~(1<<ADLAR);
+	ADCSRA |=1<<ADIE; 
+	
+	//START OF CONVERSION
+	ADCSRA |=1<<ADSC;
+	
+	int x_first=0,y_first=0,x_sec=0,y_sec=0;
+	
+	while(1)
+	{
+		uint8_t L = ADCL; // - - - - - - L L 
+		uint16_t H = ADCH<<8 | L; // H H H H H H H H L L - 10 BIT VALUE
+		
+		switch (ADMUX)
+		{
+			case 0b01000000:
+			
+			x_first = (H | 0b00000001); 			
+			x_sec = H>>8;
+			UART_Transmit(x_first);
+			UART_Transmit(x_sec);
+			ADMUX = 0b01000001; //CHECK OTHER CHANNEL
+			break;
+			
+			case 0b01000001:			
+			y_first = (H & 0b11111110);			
+			y_sec = H>>8;
+			UART_Transmit(y_first);
+			UART_Transmit(y_sec);
+			ADMUX = 0b01000000; //CHECK OTHER CHANNEL
+			break;
+		}
+		
+		ADCSRA |= 1<<ADSC;
+	}
+}
+
+
+//RECIEVER
+
+#define F_CPU 1000000UL
+
+#include <avr/io.h>
+
+void UART_Init(void)
+{
+	//BAUD RATE 2400
+	unsigned int ubrr = 25;
+	UBRRH = (unsigned char)(ubrr>>8);
+	UBRRL = (unsigned char)ubrr;
+	
+	//ENABLE RECIEVER
+	UCSRB |=(1<<RXEN);
+	
+	//NORMAL RATE
+	UCSRC &= ~(1<<U2X);
+	
+	//2 STOP BITS & 8 BIT DATA LENGTH
+	UCSRC = (1<<URSEL)|(1<<USBS)|(3<<UCSZ0);
+}
+
+void Timers_init()
+{
+	// TIMER 0  | 8 BIT FAST PWM | NON-INVERTING  | O PRESCALER
+	TCCR0 |= (1<<WGM00) |(1<<WGM01); 
+	TCCR0 |= (1<<COM01) |(1<<CS00);  
+	
+	// TIMER 2  | 8 BIT FAST PWM | NON-INVERTING   | O PRESCALER
+	TCCR2 |= (1<<WGM20) |(1<<WGM21); 
+	TCCR2 |= (1<<COM21) |(1<<CS20);  
+	
+	DDRB |= 1<<PINB3; //LEFT SPPED
+	DDRD |= 1<<PIND7; //RIGHT SPEED
+}
+
+unsigned char UART_Receive(void)
+{
+	//WAIT UNTIL BUFFER IS EMPTY
+	while(!(UCSRA & (1<<RXC)));
+	
+	return UDR;
+}
+
+//MAP FUNCTION SOURCE CODE
+long map(long x, long in_min, long in_max, long out_min, long out_max) 
+{
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+int x=0,y=0;
+
+
+int main(void)
+{
+	DDRB |=(1<<PINB1) |(1<<PINB0); //LEFT AND RIGHT DIRECTIONAL RESPECTIVELY
+	
+	UART_Init();
+	
+	Timers_init();
+	
+	uint16_t Rx=0;
+	int L=0,H=0;
+	int pwm_R;
+	int pwm_L;
+	int y_map;
+	int x_map;
+	
+	while(1)
+	{
+		
+		L = UART_Receive(); 
+		H = UART_Receive();
+		
+		Rx = H<<8 | L; 
+		
+		if((Rx & 0b00000001) == 0b00000001) // CHECKS WETHER RECIEVED VALUE IS FOR X AXIS
+		{
+			
+			x = Rx;
+		}
+		else if((Rx & 0b00000000) == 0b00000000) // CHECKS WETHER RECIEVED VALUE IS FOR Y AXIS
+		{
+			
+			y = Rx;
+		}
+		
+		
+		
+		//BUFFER :
+		if(y>500 && y<=600)
+		{y=512;}
+		if(x>500 && x<=650)
+		{x=512;}
+		
+			
+
+		// DIRECTION :
+		if(y<512 && x==512)
+		{
+			
+			PORTB |= 1<<PINB0;
+			PORTB |= (1<<PINB1);
+		}
+		else if(y>=512 && x==512)
+		{
+			
+			PORTB &= ~(1<<PINB0);
+			PORTB &= ~(1<<PINB1);
+		}
+		else if(x>512)
+		{
+			
+			PORTB &= ~(1<<PINB0);
+			PORTB |= (1<<PINB1);
+		}
+		else
+		{
+			
+			PORTB |= (1<<PINB0);
+			PORTB &= ~(1<<PINB1);
+		}
+
+		// SPEED :
+		if(y<=512 && x>=512)
+		{
+			y_map=map(y,512,0,0,255);
+			x_map=map(x,512,1023,0,255);
+			if(y_map-x_map<=0)
+			{
+
+				pwm_R=x_map-y_map;
+				pwm_L=x_map+y_map;
+				if(pwm_R>255)
+					{pwm_R=255;}
+				if(pwm_L<0)
+					{pwm_L=0;}
+			}
+			else
+			{
+				pwm_R=y_map-x_map;
+				pwm_L=y_map+x_map;
+				if(pwm_L>255)
+					{pwm_L=255;}
+				if(pwm_R<0)
+					{pwm_R=0;}
+			}
+		}
+		else if(y<512 && x<512)
+		{y_map=map(y,512,0,0,255);
+			x_map=map(x,512,0,0,255);
+			if(y_map-x_map>0)
+			{
+				pwm_R=y_map+x_map;
+				pwm_L=y_map-x_map;
+				if(pwm_L>255)
+					{pwm_L=255;}
+				if(pwm_R<0)
+					{pwm_R=0;}
+				
+			}
+			else
+			{
+				pwm_R=x_map+y_map;
+				pwm_L=x_map-y_map;
+				if(pwm_R>255)
+					{pwm_R=255;}
+				if(pwm_L<0)
+					{pwm_L=0;}
+				
+			}
+		}
+		else if(y>512 && x<512)
+		{
+			y_map=map(y,512,1023,0,255);
+			x_map=map(x,512,0,0,255);
+			if(y_map-x_map<0)
+			{
+				pwm_R=x_map-y_map;
+				pwm_L=x_map+y_map;
+				if(pwm_L>255)
+					{pwm_L=255;}
+				if(pwm_R<0)
+					{pwm_R=0;}
+				
+			}
+			else
+			{
+				pwm_R=y_map-x_map;
+				pwm_L=y_map+x_map;
+				if(pwm_L>255)
+					{pwm_L=255;}
+				if(pwm_R<0)
+					{pwm_R=0;}
+				
+			}
+		}
+		else
+		{
+			y_map=map(y,512,1023,0,255);
+			x_map=map(x,512,1023,0,255);
+			if(y_map-x_map>0)
+			{
+				pwm_R=y_map+x_map;
+				pwm_L=y_map-x_map;
+				if(pwm_L>255)
+					{pwm_L=255;}
+				if(pwm_R<0)
+					{pwm_R=0;}
+				
+			}
+			else
+			{pwm_R=x_map+y_map;
+				pwm_L=x_map-y_map;
+				if(pwm_L>255)
+					{pwm_L=255;}
+				if(pwm_R<0)
+					{pwm_R=0;}
+
+			}
+		}
+		OCR2 = pwm_L;
+		OCR0 = pwm_R;
+		}
+	}
+
