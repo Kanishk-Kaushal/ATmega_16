@@ -55,21 +55,21 @@ int main(void)
 		
 		switch (ADMUX)
 		{
-			case 0b01000000:
+			case 0x60:
 			
 			x_first = (H | 0b00000001); 			
 			x_sec = H>>8;
 			UART_Transmit(x_first);
 			UART_Transmit(x_sec);
-			ADMUX = 0b01000001; //CHECK OTHER CHANNEL
+			ADMUX = 0x61; //CHECK OTHER CHANNEL
 			break;
 			
-			case 0b01000001:			
+			case 0x61:			
 			y_first = (H & 0b11111110);			
 			y_sec = H>>8;
 			UART_Transmit(y_first);
 			UART_Transmit(y_sec);
-			ADMUX = 0b01000000; //CHECK OTHER CHANNEL
+			ADMUX = 0x60; //CHECK OTHER CHANNEL
 			break;
 		}
 		
