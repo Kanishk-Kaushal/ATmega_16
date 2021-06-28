@@ -10,6 +10,7 @@
 
 #define F_CPU 1000000UL
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 
 // DEFINE SPI PINS
@@ -55,6 +56,9 @@ void ADC_Init()
 	
 	//START OF CONVERSION
 	ADCSRA |=1<<ADSC;
+	
+	//GLOBAL INTERRUPT ENABLE
+	sei();
 }
 
 int main(void)
@@ -66,7 +70,13 @@ int main(void)
 	
 	while (1)
 	{
-		uint8_t L = ADCL; // - - - - - - L L
+		
+	}
+}
+
+ISR(ADC_Vect)
+{
+	uint8_t L = ADCL; // - - - - - - L L
 		uint16_t H = ADCH<<8 | L; // H H H H H H H H L L - 10 BIT VALUE
 		
 		switch (ADMUX)
@@ -90,7 +100,6 @@ int main(void)
 		}
 		
 		ADCSRA |= 1<<ADSC; 
-	}
 }
 
 // SLAVE
@@ -158,7 +167,12 @@ int main(void)
 	
 	Timers_init() ;
 	
+	// LEDs
+	DDRD |= (1<<PIND7);
+	DDRB |= (1<<PINB3);
 	
+	PORTD &= ~(1<<PIND7);
+	PORTB &= ~(1<<PINB3);
 	
 	uint16_t Rx=0;
 	int L=0,H=0;
