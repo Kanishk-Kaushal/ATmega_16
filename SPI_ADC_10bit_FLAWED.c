@@ -76,7 +76,7 @@ int main(void)
 
 ISR(ADC_vect)
 {
-	    uint8_t L = ADCL; // - - - - - - L L
+	    	uint8_t L = ADCL; // - - - - - - L L
 		uint16_t H = ADCH<<8 | L; // H H H H H H H H L L - 10 BIT VALUE
 		
 		int x_first=0,y_first=0,x_sec=0,y_sec=0;
