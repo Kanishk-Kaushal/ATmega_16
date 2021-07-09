@@ -134,6 +134,9 @@ int main(void)
 
 void SPI_Slave_Init()
 {
+	// MOSI SCK SS -> INPUT
+	DDRB &= ~(1<<MOSI) | ~(1<<SCK) | ~(1<<SS);
+	
 	// MISO -> OUTPUT
 	DDRB |= (1<<MISO);
 	
@@ -232,6 +235,9 @@ int main(void)
 
 void SPI_Slave_Init()
 {
+	// MOSI SCK SS -> INPUT
+	DDRB &= ~(1<<MOSI) | ~(1<<SCK) | ~(1<<SS);
+	
 	// MISO -> OUTPUT
 	DDRB |= (1<<MISO);
 	
