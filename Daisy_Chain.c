@@ -100,7 +100,7 @@ int main(void)
 	
 		// RECIEVE
 		
-		SPI_Receive();
+		RX = SPI_Receive();
 		
 		if (RX == 0b00001111)
 		{
